@@ -1,0 +1,118 @@
+{
+"AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "VPC Structure",
+
+
+    "Resources": {
+        
+        "VPC01":  {
+          "Type": "AWS::EC2::VPC",
+          "Properties": {
+            "CidrBlock": "10.0.0.0/16",
+            "Tags": [ {"Key": "Name", "Value": "VPC"} ],
+            "EnableDnsSupport": true,
+            "EnableDnsHostnames": true
+          }
+        },
+
+        "igw01": {
+          "DependsOn":"VPC01",
+          "Type": "AWS::EC2::InternetGateway",
+          "Properties": {
+            "Tags": [ {"Key": "Name", "Value": "main"} ]
+          }
+        },
+        "AttachGateway": {
+          "DependsOn":"igw01",
+          "Type": "AWS::EC2::VPCGatewayAttachment",
+          "Properties": {
+            "VpcId": { "Ref": "VPC01"},
+            "InternetGatewayId": { "Ref": "igw01" }
+          }
+        },
+        
+        
+        "privateSubnet": {
+          "DependsOn":"VPC01",
+          "Type": "AWS::EC2::Subnet",
+          "Properties": {
+            "AvailabilityZone": "us-west-1a",
+            "VpcId": { "Ref":"VPC01"},
+            "CidrBlock": "10.0.1.0/24",
+            "Tags": [{ "Key":"Name", "Value":"private_subnet"}]
+          }
+        },
+        
+        "publicSubnet": {
+          "DependsOn":"VPC01",
+          "Type": "AWS::EC2::Subnet",
+          "Properties": {
+            "AvailabilityZone": "us-west-1a",
+            "VpcId": {"Ref":"VPC01"},
+            "CidrBlock": "10.0.2.0/24",
+            "Tags": [{"Key":"Name", "Value":"public_subnet"}]
+          }
+        },
+        
+        
+        "routeTable01": {
+          "DependsOn":["VPC01","igw01"],
+          "Type": "AWS::EC2::RouteTable",
+          "Properties": {
+            "VpcId": {"Ref":"VPC01"},
+            "Tags": [{"Key":"Name", "Value":"public-rt"}]
+          }
+        },
+        
+        "publicRoute": {
+          "DependsOn":["VPC01","routeTable01"],
+          "Type": "AWS::EC2::Route",
+          "Properties": {
+            "RouteTableId": {"Ref":"routeTable01"},
+            "DestinationCidrBlock": "0.0.0.0/0",
+            "GatewayId": {"Ref":"igw01"}
+          }
+        },
+
+        "publicSubnetAssociation": {
+            "DependsOn":["VPC01","routeTable01","publicRoute"], 
+            "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties" : {
+                "RouteTableId" : {"Ref":"routeTable01"},
+                "SubnetId" : {"Ref":"publicSubnet"}
+             }
+        },    
+
+    },
+
+    "Outputs": {
+
+      "VpcCIDR":{
+        "Description":"VPC ID ",
+        "Value" : { "Fn::GetAtt" : [ "VPC01", "CidrBlock" ]}
+        },
+            
+      "PrivateSubnetID" : {
+        "Value" : {"Ref":"privateSubnet"}
+      },
+
+      "PublicSubnetID" : {
+        "Value" : {"Ref":"publicSubnet"}
+      }
+      
+
+      
+
+
+      
+
+      
+    
+    
+    }
+}
+      
+    
+     
+      
+
